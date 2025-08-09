@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="container" data-aos="fade-up">
+  <div class="card">
+    {% if not auth %}
+      <h3>Admin Login</h3>
+      <form method="post">
+        <label>Password<input type="password" name="password" required></label>
+        <div class="controls"><button class="btn">Login</button></div>
+      </form>
+    {% else %}
+      <h3>Admin — Pending Entries</h3>
+      <a href="{{ url_for('admin_logout') }}">Logout</a>
+      {% if pending %}
+        <table class="donation-table">
+          <thead><tr><th>Code</th><th>User</th><th>Type</th><th>PI</th><th>PHP at time</th><th>Action</th></tr></thead>
+          <tbody>
+            {% for p in pending %}
+            <tr>
+              <td>{{ p.code }}</td>
+              <td>{{ p.username }}</td>
+              <td>{{ p.type }}</td>
+              <td>{{ p.amount_pi }}</td>
+              <td>{{ p.amount_php_at_time }}</td>
+              <td>
+                <form method="post" action="{{ url_for('admin_accept') }}" style="display:inline">
+                  <input type="hidden" name="code" value="{{ p.code }}">
+                  <button class="btn small">Accept</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">No pending entries.</p>
+      {% endif %}
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
