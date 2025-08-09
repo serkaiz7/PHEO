@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="container form-section" data-aos="fade-up">
+  <div class="card form-card">
+    <h2>Sign in</h2>
+    <form method="post">
+      <label>Username<input name="username" required></label>
+      <label>Password<input name="password" type="password" required></label>
+      <div class="controls">
+        <button class="btn" type="submit">Login</button>
+        <a class="ghost-link" href="{{ url_for('register') }}">Create account</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
