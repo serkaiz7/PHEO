@@ -113,9 +113,3 @@ This project is open-source and free to use.
 ---
 
 💡 Note: This site does NOT process Pi transactions automatically — it only tracks and records them for your reference.
-
----
-
-I can now prepare **all the actual code files** exactly matching this README so you can run it immediately and push to GitHub.  
-Do you want me to give you **everything in one complete code block** so you can copy-paste into your folders?
-
