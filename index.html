@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pi Network Donation Site</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f8f9fa; }
+    header { background: #0d6efd; color: white; padding: 15px; text-align: center; font-size: 1.5em; }
+    .container { max-width: 800px; margin: 20px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    button { padding: 10px 15px; margin-top: 10px; cursor: pointer; border: none; border-radius: 5px; background: #0d6efd; color: white; }
+    button:hover { background: #084298; }
+    input, select { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; }
+    .hidden { display: none; }
+    .status-pending { color: orange; }
+    .status-approved { color: green; }
+    .pi-address { font-family: monospace; background: #eee; padding: 8px; border-radius: 5px; }
+    canvas { margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<header>Pi Network Donation Site</header>
+
+<div class="container" id="auth-section">
+    <h2>Register</h2>
+    <input type="text" id="reg-username" placeholder="Username">
+    <input type="password" id="reg-password" placeholder="Password">
+    <button onclick="register()">Register</button>
+
+    <h2>Login</h2>
+    <input type="text" id="login-username" placeholder="Username">
+    <input type="password" id="login-password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
+
+<div class="container hidden" id="dashboard-section">
+    <h2>Welcome, <span id="user-name"></span></h2>
+
+    <h3>Pi Network Donation Address</h3>
+    <div class="pi-address" id="pi-address">
+        MALYJFJ5SVD45FBWN2GT4IW67SEZ3IBOFSBSPUFCWV427NBNLG3PWAAAAAAAAIR37PBGG
+    </div>
+    <button onclick="copyAddress()">Copy Address</button>
+
+    <h3>Provide Donation</h3>
+    <input type="number" id="provide-amount" placeholder="Amount in Pi">
+    <div>PHP Value: <span id="provide-php">0</span></div>
+    <button onclick="provideDonation()">Provide</button>
+
+    <h3>Request Donation</h3>
+    <input type="number" id="request-amount" placeholder="Amount in Pi">
+    <div>PHP Value: <span id="request-php">0</span></div>
+    <button onclick="requestDonation()">Request</button>
+
+    <h3>Status</h3>
+    <div id="status-text"></div>
+
+    <canvas id="donationChart" width="400" height="200"></canvas>
+
+    <button onclick="logout()">Logout</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let users = JSON.parse(localStorage.getItem("users") || "{}");
+let currentUser = null;
+let piPricePHP = 0;
+let chart;
+
+// Fetch PiCoin price in PHP
+async function fetchPiPrice() {
+    try {
+        let res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=pi-network&vs_currencies=php");
+        let data = await res.json();
+        piPricePHP = data["pi-network"].php;
+    } catch (e) {
+        console.error("Price fetch failed", e);
+    }
+}
+fetchPiPrice();
+setInterval(fetchPiPrice, 60000); // update every minute
+
+function register() {
+    let user = document.getElementById("reg-username").value;
+    let pass = document.getElementById("reg-password").value;
+    if (!user || !pass) return alert("Fill all fields");
+    if (users[user]) return alert("User exists");
+    users[user] = { password: pass, donations: [], status: "" };
+    localStorage.setItem("users", JSON.stringify(users));
+    alert("Registered successfully");
+}
+
+function login() {
+    let user = document.getElementById("login-username").value;
+    let pass = document.getElementById("login-password").value;
+    if (!users[user] || users[user].password !== pass) return alert("Invalid credentials");
+    currentUser = user;
+    document.getElementById("auth-section").classList.add("hidden");
+    document.getElementById("dashboard-section").classList.remove("hidden");
+    document.getElementById("user-name").innerText = currentUser;
+    updateChart();
+    document.getElementById("status-text").innerText = users[currentUser].status;
+}
+
+function logout() {
+    currentUser = null;
+    document.getElementById("dashboard-section").classList.add("hidden");
+    document.getElementById("auth-section").classList.remove("hidden");
+}
+
+function copyAddress() {
+    let text = document.getElementById("pi-address").innerText;
+    navigator.clipboard.writeText(text);
+    alert("Address copied!");
+}
+
+function provideDonation() {
+    let amt = parseFloat(document.getElementById("provide-amount").value);
+    if (!amt) return alert("Enter amount");
+    let phpVal = amt * piPricePHP;
+    users[currentUser].donations.push({ type: "provided", amount: amt, php: phpVal });
+    users[currentUser].status = "Donation Provided - Pending Approval";
+    saveData();
+    updateChart();
+}
+
+function requestDonation() {
+    let amt = parseFloat(document.getElementById("request-amount").value);
+    if (!amt) return alert("Enter amount");
+    let phpVal = amt * piPricePHP;
+    users[currentUser].donations.push({ type: "requested", amount: amt, php: phpVal });
+    users[currentUser].status = "Donation Requested - Pending Approval";
+    saveData();
+    updateChart();
+}
+
+function saveData() {
+    localStorage.setItem("users", JSON.stringify(users));
+    document.getElementById("status-text").innerText = users[currentUser].status;
+}
+
+function updateChart() {
+    let provided = 0, requested = 0;
+    users[currentUser].donations.forEach(d => {
+        if (d.type === "provided") provided += d.amount;
+        if (d.type === "requested") requested += d.amount;
+    });
+    let earnings = provided * 0.3; // 30% growth
+    let ctx = document.getElementById('donationChart').getContext('2d');
+    if (chart) chart.destroy();
+    chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ["Provided", "Requested", "Earnings (+30%)"],
+            datasets: [{
+                label: 'Pi Amount',
+                data: [provided, requested, earnings],
+                backgroundColor: ['#198754', '#dc3545', '#ffc107']
+            }]
+        }
+    });
+}
+
+setInterval(() => {
+    let provideAmt = parseFloat(document.getElementById("provide-amount").value) || 0;
+    let requestAmt = parseFloat(document.getElementById("request-amount").value) || 0;
+    document.getElementById("provide-php").innerText = (provideAmt * piPricePHP).toFixed(2);
+    document.getElementById("request-php").innerText = (requestAmt * piPricePHP).toFixed(2);
+}, 500);
+</script>
+</body>
+</html>
