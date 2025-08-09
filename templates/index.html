@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero" data-aos="fade-up">
+  <div class="container hero-grid">
+    <div class="hero-left">
+      <h1>Grow the future — donate in PI</h1>
+      <p class="lead">Send donations to our **Pi Network address** — every donation grows at <strong>30% / month</strong> (compounded monthly) and is shown in your private dashboard.</p>
+      <div class="cta-row">
+        <a class="btn large" href="{{ url_for('register') }}">Create account</a>
+        <a class="btn large ghost" href="{{ url_for('login') }}">Sign in</a>
+      </div>
+    </div>
+
+    <div class="hero-right card" data-aos="zoom-in">
+      <h4>Pi Address</h4>
+      <div class="pi-card">
+        <div id="piAddress">{{ pi_address }}</div>
+        <button onclick="copyPiAddress()" class="btn small">Copy</button>
+      </div>
+      <p class="muted">This is the only Pi address accepted for donations.</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
