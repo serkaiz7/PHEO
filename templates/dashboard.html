@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="container" data-aos="fade-up">
+  <div class="dashboard-grid">
+    <aside class="profile-card card" data-aos="fade-right">
+      <div class="avatar">{{ username[0]|upper }}</div>
+      <h3>{{ username }}</h3>
+      <p class="muted">{{ session.get('username') }}</p>
+
+      <div class="pi-card small">
+        <div class="pi-label">Pi Address</div>
+        <div id="piAddressSmall">{{ pi_address }}</div>
+        <button onclick="copyPiAddress()" class="btn small">Copy</button>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button class="btn" onclick="openModal('provide')">Provide (PI)</button>
+        <button class="btn ghost" onclick="openModal('requested')">Request (PI)</button>
+      </div>
+
+      <div class="status" style="margin-top:12px;">
+        {% if pending %}
+          <div class="badge waiting">You have pending requests/provides</div>
+        {% else %}
+          <div class="badge accepted">All clear</div>
+        {% endif %}
+      </div>
+    </aside>
+
+    <main class="main-card card" data-aos="fade-left">
+      <h2>Your Activity</h2>
+      <div class="total">Summary (PI):</div>
+
+      <canvas id="myChart" height="120"></canvas>
+
+      <h4 style="margin-top:18px">Entries</h4>
+      <table class="donation-table">
+        <thead>
+          <tr><th>Type</th><th>PI</th><th>Created</th><th>Months</th><th>Current (PI)</th><th>Status</th><th>Code</th></tr>
+        </thead>
+        <tbody>
+          {% for e in entries %}
+          <tr>
+            <td>{{ e.type }}</td>
+            <td>{{ '%.4f'|format(e.amount_pi) }}</td>
+            <td>{{ e.created.split('T')[0] }}</td>
+            <td>{{ e.months }}</td>
+            <td>{{ '%.4f'|format(e.current_value_pi) }}</td>
+            <td>{{ e.status }}</td>
+            <td>{{ e.code }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="muted">No activity yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </main>
+  </div>
+</section>
+
+<!-- Modal -->
+<div id="piModal" class="modal">
+  <div class="modal-content card">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h3 id="modalTitle">Action</h3>
+    <form id="actionForm" method="post" action="{{ url_for('action') }}">
+      <input type="hidden" name="type" id="formType">
+      <label>Amount (PI)<input name="amount_pi" id="amountInput" type="number" step="0.0001" min="0.0001" required></label>
+      <div class="muted small">Estimated PHP: <span id="phpVal">—</span></div>
+      <div class="controls" style="margin-top:10px;">
+        <button class="btn" type="submit">Submit</button>
+        <button type="button" class="btn ghost" onclick="closeModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // chart data passed from server
+  const chartData = {{ chart_data|tojson }};
+  (function renderChart(){
+    const ctx = document.getElementById('myChart').getContext('2d');
+    const data = {
+      labels: chartData.labels,
+      datasets: [{
+        label: 'PI',
+        data: chartData.values,
+        backgroundColor: ['rgba(255,209,102,0.9)', 'rgba(124,111,255,0.9)', 'rgba(72,214,167,0.9)']
+      }]
+    };
+    new Chart(ctx, { type: 'bar', data, options:{responsive:true,plugins:{legend:{display:false}}}});
+  })();
+</script>
+{% endblock %}
